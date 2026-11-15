@@ -1,25 +1,13 @@
 // ============================================================
 // Firestore data hooks
+// Automatically delegates to DemoStore when in Demo Mode
 // ============================================================
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import {
-  onSnapshot,
-  query,
-  where,
-  orderBy,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  updateDoc,
-  addDoc,
-  Timestamp,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase/config';
+import { useState, useEffect } from 'react';
+import { onSnapshot } from 'firebase/firestore';
+import { IS_DEMO_MODE } from '@/lib/firebase/config';
 import {
   customersQuery,
   fruitsQuery,
@@ -28,26 +16,31 @@ import {
   salesQuery,
   paymentsQuery,
   billHistoryQuery,
-  customerConverter,
-  fruitConverter,
-  saleConverter,
-  paymentConverter,
-  billHistoryConverter,
 } from '@/lib/firebase/firestore';
 import { useAuth } from './useAuth';
 import type { Customer, Fruit, SaleEntry, Payment, BillHistory } from '@/lib/types';
-import { v4 as uuidv4 } from 'uuid';
-import { getDateKey } from '@/lib/domain/date';
+import * as demoStore from '@/lib/demo/demoStore';
 
 // ------ useCustomers ------
 
 export function useCustomers() {
   const { user } = useAuth();
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>(() => {
+    if (IS_DEMO_MODE) return demoStore.getDemoCustomers();
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (IS_DEMO_MODE) {
+      const update = () => setCustomers(demoStore.getDemoCustomers());
+      setCustomers(demoStore.getDemoCustomers());
+      setLoading(false);
+      window.addEventListener('hisab-demo-store-change', update);
+      return () => window.removeEventListener('hisab-demo-store-change', update);
+    }
+
     if (!user) {
       setCustomers([]);
       setLoading(false);
@@ -76,11 +69,22 @@ export function useCustomers() {
 
 export function useFruits() {
   const { user } = useAuth();
-  const [fruits, setFruits] = useState<Fruit[]>([]);
+  const [fruits, setFruits] = useState<Fruit[]>(() => {
+    if (IS_DEMO_MODE) return demoStore.getDemoFruits();
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (IS_DEMO_MODE) {
+      const update = () => setFruits(demoStore.getDemoFruits());
+      setFruits(demoStore.getDemoFruits());
+      setLoading(false);
+      window.addEventListener('hisab-demo-store-change', update);
+      return () => window.removeEventListener('hisab-demo-store-change', update);
+    }
+
     if (!user) {
       setFruits([]);
       setLoading(false);
@@ -109,11 +113,30 @@ export function useFruits() {
 
 export function useCustomerSales(customerId: string | null) {
   const { user } = useAuth();
-  const [sales, setSales] = useState<SaleEntry[]>([]);
+  const [sales, setSales] = useState<SaleEntry[]>(() => {
+    if (IS_DEMO_MODE && customerId) {
+      return demoStore.getDemoSales().filter((s) => s.customerId === customerId);
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (IS_DEMO_MODE) {
+      const update = () => {
+        if (!customerId) {
+          setSales([]);
+        } else {
+          setSales(demoStore.getDemoSales().filter((s) => s.customerId === customerId));
+        }
+      };
+      update();
+      setLoading(false);
+      window.addEventListener('hisab-demo-store-change', update);
+      return () => window.removeEventListener('hisab-demo-store-change', update);
+    }
+
     if (!user || !customerId) {
       setSales([]);
       setLoading(false);
@@ -142,11 +165,30 @@ export function useCustomerSales(customerId: string | null) {
 
 export function useCustomerPayments(customerId: string | null) {
   const { user } = useAuth();
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<Payment[]>(() => {
+    if (IS_DEMO_MODE && customerId) {
+      return demoStore.getDemoPayments().filter((p) => p.customerId === customerId);
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (IS_DEMO_MODE) {
+      const update = () => {
+        if (!customerId) {
+          setPayments([]);
+        } else {
+          setPayments(demoStore.getDemoPayments().filter((p) => p.customerId === customerId));
+        }
+      };
+      update();
+      setLoading(false);
+      window.addEventListener('hisab-demo-store-change', update);
+      return () => window.removeEventListener('hisab-demo-store-change', update);
+    }
+
     if (!user || !customerId) {
       setPayments([]);
       setLoading(false);
@@ -175,11 +217,26 @@ export function useCustomerPayments(customerId: string | null) {
 
 export function useAllSales() {
   const { user } = useAuth();
-  const [sales, setSales] = useState<SaleEntry[]>([]);
+  const [sales, setSales] = useState<SaleEntry[]>(() => {
+    if (IS_DEMO_MODE) return demoStore.getDemoSales();
+    return [];
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { setSales([]); setLoading(false); return; }
+    if (IS_DEMO_MODE) {
+      const update = () => setSales(demoStore.getDemoSales());
+      setSales(demoStore.getDemoSales());
+      setLoading(false);
+      window.addEventListener('hisab-demo-store-change', update);
+      return () => window.removeEventListener('hisab-demo-store-change', update);
+    }
+
+    if (!user) {
+      setSales([]);
+      setLoading(false);
+      return;
+    }
     const q = salesQuery(user.uid);
     const unsubscribe = onSnapshot(q, (snap) => {
       setSales(snap.docs.map((d) => d.data()));
@@ -195,11 +252,26 @@ export function useAllSales() {
 
 export function useAllPayments() {
   const { user } = useAuth();
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<Payment[]>(() => {
+    if (IS_DEMO_MODE) return demoStore.getDemoPayments();
+    return [];
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { setPayments([]); setLoading(false); return; }
+    if (IS_DEMO_MODE) {
+      const update = () => setPayments(demoStore.getDemoPayments());
+      setPayments(demoStore.getDemoPayments());
+      setLoading(false);
+      window.addEventListener('hisab-demo-store-change', update);
+      return () => window.removeEventListener('hisab-demo-store-change', update);
+    }
+
+    if (!user) {
+      setPayments([]);
+      setLoading(false);
+      return;
+    }
     const q = paymentsQuery(user.uid);
     const unsubscribe = onSnapshot(q, (snap) => {
       setPayments(snap.docs.map((d) => d.data()));
@@ -215,11 +287,26 @@ export function useAllPayments() {
 
 export function useBillHistory(customerId: string | null) {
   const { user } = useAuth();
-  const [history, setHistory] = useState<BillHistory[]>([]);
+  const [history, setHistory] = useState<BillHistory[]>(() => {
+    if (IS_DEMO_MODE) return demoStore.getDemoBillHistory(customerId || undefined);
+    return [];
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !customerId) { setHistory([]); setLoading(false); return; }
+    if (IS_DEMO_MODE) {
+      const update = () => setHistory(demoStore.getDemoBillHistory(customerId || undefined));
+      setHistory(demoStore.getDemoBillHistory(customerId || undefined));
+      setLoading(false);
+      window.addEventListener('hisab-demo-store-change', update);
+      return () => window.removeEventListener('hisab-demo-store-change', update);
+    }
+
+    if (!user || !customerId) {
+      setHistory([]);
+      setLoading(false);
+      return;
+    }
     const q = billHistoryQuery(user.uid, customerId);
     const unsubscribe = onSnapshot(q, (snap) => {
       setHistory(snap.docs.map((d) => d.data()));

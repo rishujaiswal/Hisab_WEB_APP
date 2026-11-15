@@ -83,6 +83,8 @@ export default function OTPPage() {
         // Demo: accept any 6-digit code, or "123456" as the test code
         if (otpValue === '123456' || otpValue.length === OTP_LENGTH) {
           sessionStorage.removeItem('hisab_demo_otp');
+          const { setDemoUserLoggedIn } = await import('@/lib/demo/demoStore');
+          setDemoUserLoggedIn(true);
           router.replace('/');
         } else {
           setError('Invalid code. Use 123456 in demo mode.');

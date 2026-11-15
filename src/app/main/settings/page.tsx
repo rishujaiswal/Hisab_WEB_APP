@@ -103,7 +103,10 @@ export default function SettingsPage() {
   async function handleSignOut() {
     setSigningOut(true);
     try {
-      if (!isDemoMode) {
+      if (isDemoMode) {
+        const { setDemoUserLoggedIn } = await import('@/lib/demo/demoStore');
+        setDemoUserLoggedIn(false);
+      } else {
         await signOut();
       }
       router.replace('/login');

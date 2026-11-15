@@ -70,9 +70,10 @@ export default function LoginPage() {
                   variant="ghost"
                   size="lg"
                   className="w-full text-[#888888]"
-                  onClick={() => {
-                    // Demo mode: skip auth and go to setup/main
-                    router.push('/setup');
+                  onClick={async () => {
+                    const { setDemoUserLoggedIn } = await import('@/lib/demo/demoStore');
+                    setDemoUserLoggedIn(true);
+                    router.replace('/');
                   }}
                 >
                   Try Demo (no sign in)

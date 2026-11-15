@@ -1,17 +1,15 @@
 // ============================================================
 // Firestore mutation helpers — write operations
+// Automatically delegates to DemoStore when in Demo Mode
 // ============================================================
 
 import {
   doc,
   setDoc,
   updateDoc,
-  addDoc,
-  collection,
   Timestamp,
-  serverTimestamp,
 } from 'firebase/firestore';
-import { getFirebaseDb } from './config';
+import { getFirebaseDb, IS_DEMO_MODE } from './config';
 import type {
   Customer,
   Fruit,
@@ -20,10 +18,12 @@ import type {
   BillHistory,
   CustomerType,
   PaymentMode,
+  BillType,
+  SentVia,
 } from '@/lib/types';
 import { getDateKey } from '@/lib/domain/date';
-import { toPaise } from '@/lib/domain/money';
 import { v4 as uuidv4 } from 'uuid';
+import * as demoStore from '@/lib/demo/demoStore';
 
 function db() {
   const d = getFirebaseDb();
@@ -47,6 +47,10 @@ export async function saveCustomer(
   },
   existingId?: string
 ): Promise<Customer> {
+  if (IS_DEMO_MODE) {
+    return demoStore.saveDemoCustomer(ownerId, data, existingId);
+  }
+
   const now = Timestamp.now();
   const id = existingId || uuidv4();
   const ref = doc(db(), 'customers', id);
@@ -63,12 +67,11 @@ export async function saveCustomer(
     creditLimit: data.creditLimit,
     notes: data.notes,
     isActive: true,
-    createdAt: existingId ? now : now, // Will be overridden for existing
+    createdAt: now,
     updatedAt: now,
   };
 
   if (existingId) {
-    // Preserve createdAt and isActive from existing
     await updateDoc(ref, {
       name: data.name,
       phoneNumber: data.phoneNumber,
@@ -91,6 +94,11 @@ export async function toggleCustomerActive(
   customerId: string,
   isActive: boolean
 ): Promise<void> {
+  if (IS_DEMO_MODE) {
+    demoStore.toggleDemoCustomerActive(customerId, isActive);
+    return;
+  }
+
   await updateDoc(doc(db(), 'customers', customerId), {
     isActive,
     updatedAt: Timestamp.now(),
@@ -110,6 +118,10 @@ export async function saveFruit(
   },
   existingId?: string
 ): Promise<Fruit> {
+  if (IS_DEMO_MODE) {
+    return demoStore.saveDemoFruit(ownerId, data, existingId);
+  }
+
   const now = Timestamp.now();
   const id = existingId || uuidv4();
   const ref = doc(db(), 'fruits', id);
@@ -143,6 +155,11 @@ export async function saveFruit(
 }
 
 export async function deleteFruit(fruitId: string): Promise<void> {
+  if (IS_DEMO_MODE) {
+    demoStore.deleteDemoFruit(fruitId);
+    return;
+  }
+
   const { deleteDoc } = await import('firebase/firestore');
   await deleteDoc(doc(db(), 'fruits', fruitId));
 }
@@ -166,6 +183,10 @@ export async function saveSale(
   timezone: string = 'Asia/Kolkata',
   existingId?: string
 ): Promise<SaleEntry> {
+  if (IS_DEMO_MODE) {
+    return demoStore.saveDemoSale(ownerId, data, timezone, existingId);
+  }
+
   const now = Timestamp.now();
   const id = existingId || uuidv4();
   const ref = doc(db(), 'sales', id);
@@ -217,6 +238,11 @@ export async function voidSale(
   saleId: string,
   reason: string
 ): Promise<void> {
+  if (IS_DEMO_MODE) {
+    demoStore.voidDemoSale(saleId, reason);
+    return;
+  }
+
   await updateDoc(doc(db(), 'sales', saleId), {
     isVoided: true,
     voidedAt: Timestamp.now(),
@@ -240,6 +266,10 @@ export async function savePayment(
   timezone: string = 'Asia/Kolkata',
   existingId?: string
 ): Promise<Payment> {
+  if (IS_DEMO_MODE) {
+    return demoStore.saveDemoPayment(ownerId, data, timezone, existingId);
+  }
+
   const now = Timestamp.now();
   const id = existingId || uuidv4();
   const ref = doc(db(), 'payments', id);
@@ -281,6 +311,11 @@ export async function voidPayment(
   paymentId: string,
   reason: string
 ): Promise<void> {
+  if (IS_DEMO_MODE) {
+    demoStore.voidDemoPayment(paymentId, reason);
+    return;
+  }
+
   await updateDoc(doc(db(), 'payments', paymentId), {
     isVoided: true,
     voidedAt: Timestamp.now(),
@@ -296,16 +331,20 @@ export async function saveBillHistory(
   data: {
     customerId: string;
     customerName: string;
-    billType: 'today' | 'weekly' | 'monthly';
+    billType: BillType;
     dateFrom: string;
     dateTo: string;
     totalPurchases: number;
     totalDelivery: number;
     totalPaid: number;
     pendingAmount: number;
-    sentVia: 'WhatsApp' | 'PDF' | 'manual';
+    sentVia: SentVia;
   }
 ): Promise<BillHistory> {
+  if (IS_DEMO_MODE) {
+    return demoStore.saveDemoBillHistory(ownerId, data);
+  }
+
   const now = Timestamp.now();
   const id = uuidv4();
   const ref = doc(db(), 'billHistory', id);

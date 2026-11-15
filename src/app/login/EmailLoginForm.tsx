@@ -40,6 +40,8 @@ export default function EmailLoginForm({ onBack }: EmailLoginFormProps) {
 
     try {
       if (IS_DEMO_MODE) {
+        const { setDemoUserLoggedIn } = await import('@/lib/demo/demoStore');
+        setDemoUserLoggedIn(true);
         router.replace('/');
         return;
       }
