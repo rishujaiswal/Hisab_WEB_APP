@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner() {
+      return request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+    function isCreatingOwn() {
+      return request.auth != null && request.resource.data.ownerId == request.auth.uid;
+    }
+    function ownerUnchanged() {
+      return request.resource.data.ownerId == resource.data.ownerId;
+    }
+
+    match /customers/{docId} {
+      allow read: if isOwner();
+      allow create: if isCreatingOwn();
+      allow update: if isOwner() && ownerUnchanged();
+      allow delete: if isOwner();
+    }
+
+    match /fruits/{docId} {
+      allow read: if isOwner();
+      allow create: if isCreatingOwn();
+      allow update: if isOwner() && ownerUnchanged();
+      allow delete: if isOwner();
+    }
+
+    match /sales/{docId} {
+      allow read: if isOwner();
+      allow create: if isCreatingOwn() && request.resource.data.crates > 0;
+      allow update: if isOwner() && ownerUnchanged();
+      allow delete: if false;
+    }
+
+    match /payments/{docId} {
+      allow read: if isOwner();
+      allow create: if isCreatingOwn() && request.resource.data.amount > 0;
+      allow update: if isOwner() && ownerUnchanged();
+      allow delete: if false;
+    }
+
+    match /billHistory/{docId} {
+      allow read: if isOwner();
+      allow create: if isCreatingOwn();
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /appSettings/{docId} {
+      allow read: if request.auth != null && docId == request.auth.uid;
+      allow create: if request.auth != null && docId == request.auth.uid
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update: if request.auth != null && docId == request.auth.uid
+        && resource.data.ownerId == request.auth.uid;
+      allow delete: if false;
+    }
+  }
+}
