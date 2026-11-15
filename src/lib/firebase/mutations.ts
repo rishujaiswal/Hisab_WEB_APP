@@ -142,6 +142,11 @@ export async function saveFruit(
   return fruit;
 }
 
+export async function deleteFruit(fruitId: string): Promise<void> {
+  const { deleteDoc } = await import('firebase/firestore');
+  await deleteDoc(doc(db(), 'fruits', fruitId));
+}
+
 // ------ Sale mutations ------
 
 export async function saveSale(

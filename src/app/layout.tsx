@@ -1,13 +1,8 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/hooks/useAuth';
 import { ToastProvider } from '@/components/ui/Toast';
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-});
+import { ServiceWorkerRegister } from '@/components/layout/ServiceWorkerRegister';
 
 export const metadata: Metadata = {
   title: 'Hisab — Your fruit business, organized',
@@ -28,13 +23,18 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`}>
+    <html lang="en" className="h-full">
       <head />
       <body className="min-h-full bg-[#F5F5F7] font-sans antialiased">
         <AuthProvider>
           <ToastProvider>
+            <ServiceWorkerRegister />
             {children}
           </ToastProvider>
         </AuthProvider>

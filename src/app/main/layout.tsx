@@ -10,7 +10,11 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { QuickAddButton } from '@/components/layout/QuickAddButton';
 import { SyncStatusBar } from '@/components/layout/SyncStatusBar';
 
-export default function MainLayout({ children }: LayoutProps<'/main'>) {
+export default function MainLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, loading: authLoading, isDemoMode } = useAuth();
   const { isSetupComplete, loading: settingsLoading } = useSettings();
   const router = useRouter();
