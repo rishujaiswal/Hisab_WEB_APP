@@ -96,48 +96,10 @@ export function resetDemoStore(): void {
   notifyChange();
 }
 
-// ------ Initial Seeds ------
-
-const DEFAULT_FRUITS: Fruit[] = [
-  {
-    id: 'fruit-apple',
-    ownerId: DEMO_OWNER_ID,
-    name: 'Kashmiri Apple',
-    defaultWeightPerCrate: 15,
-    defaultRatePerKg: 6000, // ₹60/kg in paise
-    defaultDeliveryCharge: 5000, // ₹50 in paise
-    isActive: true,
-    createdAt: createTimestamp(),
-    updatedAt: createTimestamp(),
-  },
-  {
-    id: 'fruit-banana',
-    ownerId: DEMO_OWNER_ID,
-    name: 'Robusta Banana',
-    defaultWeightPerCrate: 12,
-    defaultRatePerKg: 3500, // ₹35/kg in paise
-    defaultDeliveryCharge: 0,
-    isActive: true,
-    createdAt: createTimestamp(),
-    updatedAt: createTimestamp(),
-  },
-  {
-    id: 'fruit-mango',
-    ownerId: DEMO_OWNER_ID,
-    name: 'Alphonso Mango',
-    defaultWeightPerCrate: 10,
-    defaultRatePerKg: 12000, // ₹120/kg in paise
-    defaultDeliveryCharge: 10000, // ₹100 in paise
-    isActive: true,
-    createdAt: createTimestamp(),
-    updatedAt: createTimestamp(),
-  },
-];
-
 // ------ Auth ------
 
 export function isDemoUserLoggedIn(): boolean {
-  return getStored<boolean>(STORAGE_KEYS.USER_LOGGED_IN, true);
+  return getStored<boolean>(STORAGE_KEYS.USER_LOGGED_IN, false);
 }
 
 export function setDemoUserLoggedIn(active: boolean): void {
@@ -149,23 +111,6 @@ export function setDemoUserLoggedIn(active: boolean): void {
 
 export function getDemoSettings(): AppSettings | null {
   const settings = getStored<AppSettings | null>(STORAGE_KEYS.SETTINGS, null);
-  if (!settings) {
-    const defaultSettings: AppSettings = {
-      id: DEMO_OWNER_ID,
-      ownerId: DEMO_OWNER_ID,
-      ownerName: 'Ramesh Kumar',
-      shopName: 'Ramesh Fruit Traders',
-      shopAddress: 'Shop 12, APMC Market, Vashi, Navi Mumbai',
-      shopPhone: '9876543210',
-      whatsappNumber: '9876543210',
-      weeklyStartDay: 1,
-      timezone: 'Asia/Kolkata',
-      createdAt: createTimestamp(),
-      updatedAt: createTimestamp(),
-    };
-    setStored(STORAGE_KEYS.SETTINGS, defaultSettings);
-    return defaultSettings;
-  }
   return settings;
 }
 
@@ -174,11 +119,11 @@ export function saveDemoSettings(data: Partial<AppSettings>): AppSettings {
   const updated: AppSettings = {
     id: DEMO_OWNER_ID,
     ownerId: DEMO_OWNER_ID,
-    ownerName: data.ownerName || current?.ownerName || '',
-    shopName: data.shopName || current?.shopName || '',
-    shopAddress: data.shopAddress || current?.shopAddress || '',
-    shopPhone: data.shopPhone || current?.shopPhone || '',
-    whatsappNumber: data.whatsappNumber || current?.whatsappNumber || '',
+    ownerName: data.ownerName ?? current?.ownerName ?? '',
+    shopName: data.shopName ?? current?.shopName ?? '',
+    shopAddress: data.shopAddress ?? current?.shopAddress ?? '',
+    shopPhone: data.shopPhone ?? current?.shopPhone ?? '',
+    whatsappNumber: data.whatsappNumber ?? current?.whatsappNumber ?? '',
     weeklyStartDay: data.weeklyStartDay || current?.weeklyStartDay || 1,
     timezone: data.timezone || current?.timezone || 'Asia/Kolkata',
     createdAt: current?.createdAt || createTimestamp(),
@@ -275,12 +220,7 @@ export function toggleDemoCustomerActive(customerId: string, isActive: boolean):
 // ------ Fruits ------
 
 export function getDemoFruits(): Fruit[] {
-  const fruits = getStored<Fruit[]>(STORAGE_KEYS.FRUITS, []);
-  if (fruits.length === 0) {
-    setStored(STORAGE_KEYS.FRUITS, DEFAULT_FRUITS);
-    return DEFAULT_FRUITS;
-  }
-  return fruits;
+  return getStored<Fruit[]>(STORAGE_KEYS.FRUITS, []);
 }
 
 export function saveDemoFruit(

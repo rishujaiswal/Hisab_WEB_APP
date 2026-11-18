@@ -325,7 +325,7 @@ export default function BillPreviewPage({
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="w-full min-w-0 max-w-4xl mx-auto p-3 pb-32 sm:p-6 sm:pb-6 space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Top Action Bar (hidden when printing) */}
       <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <button
@@ -337,7 +337,7 @@ export default function BillPreviewPage({
           Back
         </button>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Button
             variant="secondary"
             size="sm"
@@ -379,7 +379,7 @@ export default function BillPreviewPage({
       </div>
 
       {/* Printable Statement Sheet */}
-      <div className="bg-white rounded-3xl border border-[#EBEBEB] p-6 sm:p-10 shadow-sm space-y-6 print:border-none print:shadow-none print:p-0">
+      <div className="w-full min-w-0 bg-white rounded-2xl sm:rounded-3xl border border-[#EBEBEB] p-4 sm:p-10 shadow-sm space-y-5 sm:space-y-6 print:border-none print:shadow-none print:p-0">
         {/* Shop Branding Header */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-[#EBEBEB]">
           <div>
@@ -438,8 +438,9 @@ export default function BillPreviewPage({
               No produce sales recorded during this period.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <>
+              <div className="hidden sm:block max-w-full overflow-x-auto print:block">
+                <table className="w-full min-w-[680px] text-left text-xs">
                 <thead>
                   <tr className="border-b border-[#EBEBEB] text-[#888888]">
                     <th className="py-2.5 font-medium">Date</th>
@@ -468,8 +469,30 @@ export default function BillPreviewPage({
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
+                </table>
+              </div>
+              <div className="space-y-2 sm:hidden print:hidden">
+                {periodSales.map((s) => (
+                  <article key={s.id} className="rounded-xl border border-[#EBEBEB] bg-gray-50 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-[#1A1A2E] break-words">{s.fruitName}</p>
+                        <p className="text-xs text-[#888888] mt-0.5">{formatDateDisplay(s.dateKey)}</p>
+                      </div>
+                      <p className="shrink-0 text-sm font-bold text-[#1A1A2E]">
+                        {formatINR(getSaleTotalAmount(s))}
+                      </p>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-[#666666]">
+                      <span>{s.crates} crate{s.crates === 1 ? '' : 's'}</span>
+                      <span>{s.weightPerCrate} kg / crate</span>
+                      <span>{formatINR(s.ratePerKg)} / kg</span>
+                      <span>Delivery: {s.deliveryCharge > 0 ? formatINR(s.deliveryCharge) : '—'}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
@@ -481,8 +504,8 @@ export default function BillPreviewPage({
             </h2>
             <div className="divide-y divide-[#EBEBEB] text-xs">
               {periodPayments.map((p) => (
-                <div key={p.id} className="py-2 flex justify-between items-center text-[#1A1A2E]">
-                  <span>
+                <div key={p.id} className="py-2 flex justify-between items-start gap-3 text-[#1A1A2E]">
+                  <span className="min-w-0 break-words">
                     {formatDateDisplay(p.dateKey)} via {p.paymentMode}
                     {p.note ? ` (${p.note})` : ''}
                   </span>

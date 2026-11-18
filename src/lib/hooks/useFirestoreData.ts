@@ -6,8 +6,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { onSnapshot } from 'firebase/firestore';
-import { IS_DEMO_MODE } from '@/lib/firebase/config';
+import { onSnapshot, runTransaction, type DocumentData as FirebaseDocumentData } from 'firebase/firestore';
+import { getFirebaseDb, IS_DEMO_MODE } from '@/lib/firebase/config';
 import {
   customersQuery,
   fruitsQuery,
@@ -16,10 +16,62 @@ import {
   salesQuery,
   paymentsQuery,
   billHistoryQuery,
+  legacyCustomersQuery,
+  legacyFruitsQuery,
+  legacySalesQuery,
+  legacySalesByCustomerQuery,
+  legacyPaymentsQuery,
+  legacyPaymentsByCustomerQuery,
+  legacyBillHistoryQuery,
 } from '@/lib/firebase/firestore';
 import { useAuth } from './useAuth';
 import type { Customer, Fruit, SaleEntry, Payment, BillHistory } from '@/lib/types';
 import * as demoStore from '@/lib/demo/demoStore';
+import { legacyMoneyMigrationPatch, type MoneyCollection } from '@/lib/firebase/moneyStorage';
+
+function subscribeWithLegacy<T extends { id: string }>(
+  primary: Parameters<typeof onSnapshot>[0],
+  legacy: Parameters<typeof onSnapshot>[0],
+  onData: (items: T[]) => void,
+  onError: (error: Error) => void,
+  moneyCollection: MoneyCollection
+) {
+  let primaryItems: T[] = [];
+  let legacyItems: T[] = [];
+  const emit = () => {
+    const byId = new Map<string, T>();
+    legacyItems.forEach((item) => byId.set(item.id, item));
+    primaryItems.forEach((item) => byId.set(item.id, item));
+    onData([...byId.values()]);
+  };
+  const migrateOldMoneyValues = (snap: any) => {
+    const firestore = getFirebaseDb();
+    if (!firestore) return;
+    for (const item of snap.docs) {
+      const ref = item.ref.withConverter(null);
+      void runTransaction(firestore, async (transaction) => {
+        const current = await transaction.get(ref);
+        if (!current.exists()) return;
+        const patch = legacyMoneyMigrationPatch(
+          moneyCollection,
+          current.data() as Record<string, unknown>
+        );
+        if (patch) transaction.update(ref, patch as FirebaseDocumentData);
+      }).catch((error) => console.error('Could not migrate money fields to rupees', error));
+    }
+  };
+  const unsubPrimary = onSnapshot(primary as never, (snap: any) => {
+    migrateOldMoneyValues(snap);
+    primaryItems = snap.docs.map((d: any) => d.data() as T);
+    emit();
+  }, onError);
+  const unsubLegacy = onSnapshot(legacy as never, (snap: any) => {
+    migrateOldMoneyValues(snap);
+    legacyItems = snap.docs.map((d: any) => d.data() as T);
+    emit();
+  }, onError);
+  return () => { unsubPrimary(); unsubLegacy(); };
+}
 
 // ------ useCustomers ------
 
@@ -47,17 +99,17 @@ export function useCustomers() {
       return;
     }
 
-    const q = customersQuery(user.uid);
-    const unsubscribe = onSnapshot(
-      q,
-      (snap) => {
-        setCustomers(snap.docs.map((d) => d.data()));
+    const unsubscribe = subscribeWithLegacy<Customer>(
+      customersQuery(user.uid), legacyCustomersQuery(user.uid),
+      (items) => {
+        setCustomers(items);
         setLoading(false);
       },
       (err) => {
         setError(err.message);
         setLoading(false);
-      }
+      },
+      'customers'
     );
     return unsubscribe;
   }, [user]);
@@ -91,17 +143,17 @@ export function useFruits() {
       return;
     }
 
-    const q = fruitsQuery(user.uid);
-    const unsubscribe = onSnapshot(
-      q,
-      (snap) => {
-        setFruits(snap.docs.map((d) => d.data()));
+    const unsubscribe = subscribeWithLegacy<Fruit>(
+      fruitsQuery(user.uid), legacyFruitsQuery(user.uid),
+      (items) => {
+        setFruits(items);
         setLoading(false);
       },
       (err) => {
         setError(err.message);
         setLoading(false);
-      }
+      },
+      'fruits'
     );
     return unsubscribe;
   }, [user]);
@@ -143,17 +195,17 @@ export function useCustomerSales(customerId: string | null) {
       return;
     }
 
-    const q = salesByCustomerQuery(user.uid, customerId);
-    const unsubscribe = onSnapshot(
-      q,
-      (snap) => {
-        setSales(snap.docs.map((d) => d.data()));
+    const unsubscribe = subscribeWithLegacy<SaleEntry>(
+      salesByCustomerQuery(user.uid, customerId), legacySalesByCustomerQuery(user.uid, customerId),
+      (items) => {
+        setSales(items);
         setLoading(false);
       },
       (err) => {
         setError(err.message);
         setLoading(false);
-      }
+      },
+      'sales'
     );
     return unsubscribe;
   }, [user, customerId]);
@@ -195,17 +247,17 @@ export function useCustomerPayments(customerId: string | null) {
       return;
     }
 
-    const q = paymentsByCustomerQuery(user.uid, customerId);
-    const unsubscribe = onSnapshot(
-      q,
-      (snap) => {
-        setPayments(snap.docs.map((d) => d.data()));
+    const unsubscribe = subscribeWithLegacy<Payment>(
+      paymentsByCustomerQuery(user.uid, customerId), legacyPaymentsByCustomerQuery(user.uid, customerId),
+      (items) => {
+        setPayments(items);
         setLoading(false);
       },
       (err) => {
         setError(err.message);
         setLoading(false);
-      }
+      },
+      'payments'
     );
     return unsubscribe;
   }, [user, customerId]);
@@ -237,11 +289,10 @@ export function useAllSales() {
       setLoading(false);
       return;
     }
-    const q = salesQuery(user.uid);
-    const unsubscribe = onSnapshot(q, (snap) => {
-      setSales(snap.docs.map((d) => d.data()));
+    const unsubscribe = subscribeWithLegacy<SaleEntry>(salesQuery(user.uid), legacySalesQuery(user.uid), (items) => {
+      setSales(items);
       setLoading(false);
-    });
+    }, (err) => console.error('Failed to load sales', err), 'sales');
     return unsubscribe;
   }, [user]);
 
@@ -272,11 +323,10 @@ export function useAllPayments() {
       setLoading(false);
       return;
     }
-    const q = paymentsQuery(user.uid);
-    const unsubscribe = onSnapshot(q, (snap) => {
-      setPayments(snap.docs.map((d) => d.data()));
+    const unsubscribe = subscribeWithLegacy<Payment>(paymentsQuery(user.uid), legacyPaymentsQuery(user.uid), (items) => {
+      setPayments(items);
       setLoading(false);
-    });
+    }, (err) => console.error('Failed to load payments', err), 'payments');
     return unsubscribe;
   }, [user]);
 
@@ -307,11 +357,10 @@ export function useBillHistory(customerId: string | null) {
       setLoading(false);
       return;
     }
-    const q = billHistoryQuery(user.uid, customerId);
-    const unsubscribe = onSnapshot(q, (snap) => {
-      setHistory(snap.docs.map((d) => d.data()));
+    const unsubscribe = subscribeWithLegacy<BillHistory>(billHistoryQuery(user.uid, customerId), legacyBillHistoryQuery(user.uid, customerId), (items) => {
+      setHistory(items);
       setLoading(false);
-    });
+    }, (err) => console.error('Failed to load bill history', err), 'billHistory');
     return unsubscribe;
   }, [user, customerId]);
 

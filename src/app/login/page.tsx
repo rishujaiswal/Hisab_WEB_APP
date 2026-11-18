@@ -101,7 +101,10 @@ function GoogleSignInButton() {
   const router = useRouter();
 
   async function handleGoogleSignIn() {
-    if (IS_DEMO_MODE) return;
+    if (IS_DEMO_MODE) {
+      setError('Google sign-in needs Firebase credentials. Configure .env.local and enable Google in Firebase Authentication.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -118,8 +121,6 @@ function GoogleSignInButton() {
       setLoading(false);
     }
   }
-
-  if (IS_DEMO_MODE) return null;
 
   return (
     <div>

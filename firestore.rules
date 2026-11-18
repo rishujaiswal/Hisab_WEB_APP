@@ -12,6 +12,52 @@ service cloud.firestore {
       return request.resource.data.ownerId == resource.data.ownerId;
     }
 
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.ownerId == userId;
+      allow update: if request.auth != null && request.auth.uid == userId
+        && resource.data.ownerId == userId
+        && request.resource.data.ownerId == userId;
+      allow delete: if false;
+
+      match /customers/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == userId;
+        allow update: if request.auth != null && request.auth.uid == userId && resource.data.ownerId == userId && request.resource.data.ownerId == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId && resource.data.ownerId == userId;
+      }
+      match /fruits/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == userId;
+        allow update: if request.auth != null && request.auth.uid == userId && resource.data.ownerId == userId && request.resource.data.ownerId == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId && resource.data.ownerId == userId;
+      }
+      match /sales/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == userId && request.resource.data.crates > 0;
+        allow update: if request.auth != null && request.auth.uid == userId && resource.data.ownerId == userId && request.resource.data.ownerId == userId;
+        allow delete: if false;
+      }
+      match /payments/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == userId && request.resource.data.amount > 0;
+        allow update: if request.auth != null && request.auth.uid == userId && resource.data.ownerId == userId && request.resource.data.ownerId == userId;
+        allow delete: if false;
+      }
+      match /billHistory/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == userId;
+        allow update, delete: if false;
+      }
+      match /settings/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == userId;
+        allow update: if request.auth != null && request.auth.uid == userId && resource.data.ownerId == userId && request.resource.data.ownerId == userId;
+        allow delete: if false;
+      }
+    }
+
     match /customers/{docId} {
       allow read: if isOwner();
       allow create: if isCreatingOwn();

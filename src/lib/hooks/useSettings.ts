@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   settingsDocRef,
+  legacySettingsDocRef,
   getDoc,
   setDoc,
   Timestamp,
@@ -62,7 +63,8 @@ export function useSettings() {
     async function loadSettings() {
       try {
         const docRef = settingsDocRef(user!.uid);
-        const snap = await getDoc(docRef);
+        let snap = await getDoc(docRef);
+        if (!snap.exists()) snap = await getDoc(legacySettingsDocRef(user!.uid));
         if (!cancelled) {
           if (snap.exists()) {
             setSettings(snap.data());
@@ -98,7 +100,8 @@ export function useSettings() {
 
       const now = Timestamp.now();
       const docRef = settingsDocRef(user.uid);
-      const snap = await getDoc(docRef);
+      let snap = await getDoc(docRef);
+      if (!snap.exists()) snap = await getDoc(legacySettingsDocRef(user.uid));
 
       const updatedSettings: AppSettings = {
         ...DEFAULT_SETTINGS,

@@ -130,6 +130,8 @@ export default function OTPPage() {
       inputRefs.current[0]?.focus();
     } catch (err: any) {
       setError(err?.message || 'Failed to resend OTP.');
+      const { clearRecaptcha } = await import('@/lib/firebase/auth');
+      clearRecaptcha();
     } finally {
       setResending(false);
     }

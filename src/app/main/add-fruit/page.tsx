@@ -119,7 +119,8 @@ function FruitFormContent() {
     if (!fruitId || (fruitStats && fruitStats.count > 0)) return;
     setDeleteLoading(true);
     try {
-      await deleteFruit(fruitId);
+      if (!user) throw new Error('Not authenticated');
+      await deleteFruit(user.uid, fruitId);
       success('Produce item deleted');
       router.push('/main/items');
     } catch (err: any) {

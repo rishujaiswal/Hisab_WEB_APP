@@ -10,6 +10,7 @@ import {
   useBillHistory,
 } from '@/lib/hooks/useFirestoreData';
 import { useSettings } from '@/lib/hooks/useSettings';
+import { useAuth } from '@/lib/hooks/useAuth';
 import {
   calcCustomerBalance,
   formatINR,
@@ -56,6 +57,7 @@ export default function CustomerDetailPage({
   const router = useRouter();
 
   const { settings } = useSettings();
+  const { user } = useAuth();
   const { customers, loading: customersLoading } = useCustomers();
   const { sales, loading: salesLoading } = useCustomerSales(customerId);
   const { payments, loading: paymentsLoading } = useCustomerPayments(customerId);
@@ -125,10 +127,12 @@ export default function CustomerDetailPage({
     setVoidLoading(true);
     try {
       if (voidItem.type === 'sale') {
-        await voidSale(voidItem.id, voidReason || 'Voided by user');
+        if (!user) throw new Error('Not authenticated');
+        await voidSale(user.uid, voidItem.id, voidReason || 'Voided by user');
         success('Sale entry voided');
       } else {
-        await voidPayment(voidItem.id, voidReason || 'Voided by user');
+        if (!user) throw new Error('Not authenticated');
+        await voidPayment(user.uid, voidItem.id, voidReason || 'Voided by user');
         success('Payment entry voided');
       }
       setVoidItem(null);

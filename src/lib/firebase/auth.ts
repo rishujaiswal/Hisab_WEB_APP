@@ -21,9 +21,17 @@ import { getFirebaseAuth } from './config';
 
 let recaptchaVerifier: RecaptchaVerifier | null = null;
 
+export function clearRecaptcha(): void {
+  recaptchaVerifier?.clear();
+  recaptchaVerifier = null;
+}
+
 export function setupRecaptcha(containerId: string): RecaptchaVerifier | null {
   const auth = getFirebaseAuth();
   if (!auth) return null;
+
+  // The previous verifier may belong to a route that has already unmounted.
+  clearRecaptcha();
 
   recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
     size: 'invisible',

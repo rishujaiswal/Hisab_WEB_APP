@@ -42,7 +42,6 @@ import {
   Download,
   Users,
 } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
 
 export default function BillsDashboardPage() {
   const { user } = useAuth();
@@ -162,8 +161,7 @@ export default function BillsDashboardPage() {
           date: today,
           note: 'Quick payment from Bills dashboard',
         },
-        timezone,
-        uuidv4()
+        timezone
       );
 
       success(`₹${amountRupees} recorded for ${customer.name}`);

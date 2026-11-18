@@ -342,7 +342,7 @@ export default function ReportsPage() {
   if (loading) return <PageLoading />;
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
+    <div className="w-full min-w-0 max-w-5xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -357,6 +357,7 @@ export default function ReportsPage() {
         <Button
           variant="secondary"
           size="sm"
+          className="self-start sm:self-auto"
           onClick={handleExportCSV}
           icon={<Download className="h-4 w-4" />}
         >
@@ -365,7 +366,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Date Range Selector */}
-      <Card padding="sm" className="p-3 sm:p-4 space-y-3 bg-white">
+      <Card padding="sm" className="min-w-0 p-3 sm:p-4 space-y-3 bg-white">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs font-semibold text-[#888888] mr-1">Period:</span>
           {[
@@ -419,7 +420,7 @@ export default function ReportsPage() {
       </Card>
 
       {/* Scrollable Tabs */}
-      <div className="border-b border-[#EBEBEB] flex gap-3 overflow-x-auto pb-1">
+      <div className="min-w-0 max-w-full border-b border-[#EBEBEB] flex gap-3 overflow-x-auto pb-1">
         {[
           { id: 'sales', label: 'Sales Overview', icon: TrendingUp },
           { id: 'collections', label: 'Collections', icon: CreditCard },
@@ -445,20 +446,20 @@ export default function ReportsPage() {
       {/* TAB 1: Sales */}
       {activeTab === 'sales' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Card padding="sm" className="p-4">
+          <div className="grid min-w-0 grid-cols-2 sm:grid-cols-3 gap-3">
+            <Card padding="sm" className="min-w-0 p-3 sm:p-4">
               <div className="text-xs text-[#888888]">Total Sales Revenue</div>
-              <div className="text-xl sm:text-2xl font-bold text-[#1A1A2E] mt-1">
+              <div className="text-lg sm:text-2xl font-bold text-[#1A1A2E] mt-1 break-words">
                 {formatINR(totalSalesRevenue)}
               </div>
             </Card>
-            <Card padding="sm" className="p-4">
+            <Card padding="sm" className="min-w-0 p-3 sm:p-4">
               <div className="text-xs text-[#888888]">Crates Sold</div>
-              <div className="text-xl sm:text-2xl font-bold text-[#1A9E6A] mt-1">
+              <div className="text-lg sm:text-2xl font-bold text-[#1A9E6A] mt-1 break-words">
                 {totalCratesSold} crates
               </div>
             </Card>
-            <Card padding="sm" className="p-4 col-span-2 sm:col-span-1">
+            <Card padding="sm" className="min-w-0 p-3 sm:p-4 col-span-2 sm:col-span-1">
               <div className="text-xs text-[#888888]">Transactions</div>
               <div className="text-xl sm:text-2xl font-bold text-[#1A1A2E] mt-1">
                 {rangedSales.length} entries
@@ -466,14 +467,14 @@ export default function ReportsPage() {
             </Card>
           </div>
 
-          <Card padding="md" className="space-y-4">
+          <Card padding="md" className="min-w-0 space-y-4">
             <h2 className="text-sm font-bold text-[#1A1A2E]">Daily Produce Revenue (₹)</h2>
             {dailySalesData.every((d) => d.amount === 0) ? (
               <div className="py-12 text-center text-xs text-[#888888]">
                 No sales recorded in this date range.
               </div>
             ) : (
-              <div className="h-64 w-full">
+              <div className="h-64 w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailySalesData}>
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} />
@@ -494,20 +495,20 @@ export default function ReportsPage() {
       {/* TAB 2: Collections */}
       {activeTab === 'collections' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Card padding="sm" className="p-4">
+          <div className="grid min-w-0 grid-cols-2 sm:grid-cols-3 gap-3">
+            <Card padding="sm" className="min-w-0 p-3 sm:p-4">
               <div className="text-xs text-[#888888]">Total Collected</div>
-              <div className="text-xl sm:text-2xl font-bold text-[#007AFF] mt-1">
+              <div className="text-lg sm:text-2xl font-bold text-[#007AFF] mt-1 break-words">
                 {formatINR(totalCollections)}
               </div>
             </Card>
-            <Card padding="sm" className="p-4">
+            <Card padding="sm" className="min-w-0 p-3 sm:p-4">
               <div className="text-xs text-[#888888]">Payments Count</div>
               <div className="text-xl sm:text-2xl font-bold text-[#1A1A2E] mt-1">
                 {rangedPayments.length} payments
               </div>
             </Card>
-            <Card padding="sm" className="p-4 col-span-2 sm:col-span-1">
+            <Card padding="sm" className="min-w-0 p-3 sm:p-4 col-span-2 sm:col-span-1">
               <div className="text-xs text-[#888888]">Collected vs Billed</div>
               <div className="text-xl sm:text-2xl font-bold text-[#1A1A2E] mt-1">
                 {totalSalesRevenue > 0
@@ -517,14 +518,14 @@ export default function ReportsPage() {
             </Card>
           </div>
 
-          <Card padding="md" className="space-y-4">
+          <Card padding="md" className="min-w-0 space-y-4">
             <h2 className="text-sm font-bold text-[#1A1A2E]">Daily Collections (₹)</h2>
             {dailyCollectionsData.every((d) => d.amount === 0) ? (
               <div className="py-12 text-center text-xs text-[#888888]">
                 No collections recorded in this date range.
               </div>
             ) : (
-              <div className="h-64 w-full">
+              <div className="h-64 w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailyCollectionsData}>
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} />

@@ -24,9 +24,9 @@ describe('End-to-End User Flows & System Audit', () => {
   });
 
   describe('1. Authentication & Onboarding Flow', () => {
-    it('initializes demo user and allows login and logout', () => {
-      // Default: logged in
-      expect(demoStore.isDemoUserLoggedIn()).toBe(true);
+    it('starts signed out and allows demo login and logout', () => {
+      expect(demoStore.isDemoUserLoggedIn()).toBe(false);
+      expect(demoStore.getDemoSettings()).toBeNull();
       expect(demoStore.DEMO_USER.uid).toBe('demo_owner_123');
 
       // Logout
@@ -56,12 +56,13 @@ describe('End-to-End User Flows & System Audit', () => {
       );
       expect(isComplete).toBe(true);
     });
+
   });
 
   describe('2. Produce Items (Fruits) Management', () => {
-    it('provides initial produce items and supports adding custom fruits', () => {
+    it('starts with an empty catalogue and supports adding custom fruits', () => {
       const fruits = demoStore.getDemoFruits();
-      expect(fruits.length).toBeGreaterThanOrEqual(3);
+      expect(fruits).toHaveLength(0);
 
       const newFruit = demoStore.saveDemoFruit('demo_owner_123', {
         name: 'Nagpur Orange',
@@ -160,7 +161,13 @@ describe('End-to-End User Flows & System Audit', () => {
         notes: '',
       });
 
-      const apple = demoStore.getDemoFruits()[0];
+      const apple = demoStore.saveDemoFruit('demo_owner_123', {
+        name: 'Kashmiri Apple',
+        isActive: true,
+        defaultWeightPerCrate: 15,
+        defaultRatePerKg: toPaise(60),
+        defaultDeliveryCharge: toPaise(50),
+      });
 
       // Step A: Record Sale A (02 Nov 2026): 10 crates × 15 kg × ₹40/kg = ₹6,000 + ₹100 delivery = ₹6,100
       const saleA = demoStore.saveDemoSale(

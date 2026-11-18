@@ -14,6 +14,7 @@ import {
 } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthChange } from '@/lib/firebase/auth';
+import { ensureUserDocument } from '@/lib/firebase/firestore';
 import { IS_DEMO_MODE } from '@/lib/firebase/config';
 import {
   DEMO_USER,
@@ -57,6 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthChange((u) => {
       setUser(u);
       setLoading(false);
+      if (u) {
+        void ensureUserDocument(u.uid, {
+          displayName: u.displayName,
+          email: u.email,
+          phoneNumber: u.phoneNumber,
+        }).catch((error) => {
+          console.warn('[Hisab] Could not create the owner document:', error);
+        });
+      }
     });
 
     return unsubscribe;

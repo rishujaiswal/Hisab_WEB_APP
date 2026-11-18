@@ -26,7 +26,7 @@ export interface Customer {
   address: string;
   shopName: string;
   customerType: CustomerType;
-  creditLimit: number; // in paise, 0 = no limit
+  creditLimit: number; // application model: paise; Firestore storage: rupees
   notes: string;
   isActive: boolean;
   createdAt: Timestamp;
@@ -38,8 +38,8 @@ export interface Fruit {
   ownerId: string;
   name: string;
   defaultWeightPerCrate: number; // kg (float)
-  defaultRatePerKg: number; // paise
-  defaultDeliveryCharge: number; // paise
+  defaultRatePerKg: number; // application model: paise; Firestore storage: rupees
+  defaultDeliveryCharge: number; // application model: paise; Firestore storage: rupees
   isActive: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -56,8 +56,8 @@ export interface SaleEntry {
   dateKey: string; // YYYY-MM-DD in shop timezone
   crates: number;
   weightPerCrate: number; // kg
-  ratePerKg: number; // paise
-  deliveryCharge: number; // paise
+  ratePerKg: number; // application model: paise; Firestore storage: rupees
+  deliveryCharge: number; // application model: paise; Firestore storage: rupees
   notes: string;
   isVoided: boolean;
   voidedAt: Timestamp | null;
@@ -70,7 +70,7 @@ export interface Payment {
   ownerId: string;
   customerId: string;
   customerName: string;
-  amount: number; // paise
+  amount: number; // application model: paise; Firestore storage: rupees
   paymentMode: PaymentMode;
   date: Timestamp;
   dateKey: string; // YYYY-MM-DD in shop timezone
@@ -89,10 +89,10 @@ export interface BillHistory {
   billType: BillType;
   dateFrom: string; // YYYY-MM-DD
   dateTo: string; // YYYY-MM-DD
-  totalPurchases: number; // paise
-  totalDelivery: number; // paise
-  totalPaid: number; // paise
-  pendingAmount: number; // paise
+  totalPurchases: number; // application model: paise; Firestore storage: rupees
+  totalDelivery: number; // application model: paise; Firestore storage: rupees
+  totalPaid: number; // application model: paise; Firestore storage: rupees
+  pendingAmount: number; // application model: paise; Firestore storage: rupees
   sentAt: Timestamp;
   sentVia: SentVia;
   createdAt: Timestamp;

@@ -39,11 +39,11 @@ export default function MainLayout({
       <Sidebar />
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 min-w-0">
         <SyncStatusBar />
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto pb-20 md:pb-0"
+          className="flex-1 min-w-0 overflow-y-auto pb-20 md:pb-0"
         >
           {children}
         </main>

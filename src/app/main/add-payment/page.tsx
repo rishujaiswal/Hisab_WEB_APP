@@ -36,7 +36,6 @@ import {
   Check,
   AlertCircle,
 } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
 
 export default function AddPaymentPage() {
   return (
@@ -130,9 +129,6 @@ function PaymentFormContent() {
     setSaving(true);
     try {
       const payDate = parseDateKey(dateStr);
-      // Client-side doc ID generation for idempotency
-      const docId = paymentId || uuidv4();
-
       await savePayment(
         user.uid,
         {
@@ -144,7 +140,7 @@ function PaymentFormContent() {
           note: note.trim(),
         },
         timezone,
-        docId
+        paymentId || undefined
       );
 
       success(isEditing ? 'Payment updated successfully' : 'Payment recorded successfully');

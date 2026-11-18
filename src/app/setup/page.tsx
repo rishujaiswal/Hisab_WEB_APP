@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,8 +15,9 @@ import { PageLoading } from '@/components/ui/Loading';
 
 export default function SetupPage() {
   const { user, loading: authLoading, isDemoMode } = useAuth();
-  const { settings, loading: settingsLoading, saveSettings, isSetupComplete } = useSettings();
+  const { settings, loading: settingsLoading, saveSettings, isSetupComplete, error: settingsLoadError } = useSettings();
   const router = useRouter();
+  const [saveError, setSaveError] = useState('');
 
   const {
     register,
@@ -50,6 +51,7 @@ export default function SetupPage() {
   if (authLoading || settingsLoading) return <PageLoading />;
 
   async function onSubmit(data: ShopSetupFormData) {
+    setSaveError('');
     try {
       await saveSettings({
         ownerName: data.ownerName,
@@ -61,9 +63,13 @@ export default function SetupPage() {
         timezone: 'Asia/Kolkata',
       });
       router.replace('/main');
-    } catch (err: any) {
-      // Error handled by settings hook
-      console.error('Setup failed:', err);
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code === 'permission-denied') {
+        setSaveError('Firestore denied this settings write. Deploy the project’s firestore.rules, then reload and try again.');
+      } else {
+        setSaveError(err instanceof Error ? err.message : 'Could not save shop settings. Please try again.');
+      }
     }
   }
 
@@ -80,6 +86,11 @@ export default function SetupPage() {
 
         <div className="bg-white rounded-3xl p-6 shadow-2xl space-y-4">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {(saveError || settingsLoadError) && (
+              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-[#E84040]" role="alert" aria-live="polite">
+                {saveError || settingsLoadError}
+              </p>
+            )}
             <Input
               label="Owner name *"
               placeholder="e.g. Ramesh Kumar"

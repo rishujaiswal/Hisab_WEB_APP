@@ -143,7 +143,8 @@ function CustomerFormContent() {
     setToggleActiveLoading(true);
     try {
       const newState = !existingCustomer.isActive;
-      await toggleCustomerActive(existingCustomer.id, newState);
+      if (!user) throw new Error('Not authenticated');
+      await toggleCustomerActive(user.uid, existingCustomer.id, newState);
       success(newState ? 'Customer reactivated' : 'Customer deactivated');
       setConfirmToggleActiveOpen(false);
     } catch (err: any) {

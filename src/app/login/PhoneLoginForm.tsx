@@ -56,12 +56,20 @@ export default function PhoneLoginForm({ onBack }: PhoneLoginFormProps) {
       const code = err?.code || '';
       if (code === 'auth/invalid-phone-number') {
         setError('Invalid phone number. Please check and try again.');
+      } else if (code === 'auth/billing-not-enabled') {
+        setError('Firebase requires a Cloud Billing account for real phone sign-in SMS. SMS is billed per message. For development, configure a test phone number in Firebase Authentication.');
+      } else if (code === 'auth/operation-not-allowed') {
+        setError('Phone sign-in is not enabled for this Firebase project. Enable the Phone provider in Firebase Authentication.');
       } else if (code === 'auth/too-many-requests') {
         setError('Too many attempts. Please wait a few minutes and try again.');
       } else if (code === 'auth/captcha-check-failed') {
         setError('reCAPTCHA verification failed. Please refresh and try again.');
       } else {
         setError(err?.message || 'Failed to send OTP. Please try again.');
+      }
+      if (!IS_DEMO_MODE) {
+        const { clearRecaptcha } = await import('@/lib/firebase/auth');
+        clearRecaptcha();
       }
     } finally {
       setLoading(false);

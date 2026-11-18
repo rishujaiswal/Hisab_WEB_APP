@@ -4,12 +4,12 @@
 // ============================================================
 
 import {
-  doc,
   setDoc,
-  updateDoc,
   Timestamp,
+  getDoc,
+  deleteDoc,
 } from 'firebase/firestore';
-import { getFirebaseDb, IS_DEMO_MODE } from './config';
+import { IS_DEMO_MODE } from './config';
 import type {
   Customer,
   Fruit,
@@ -24,11 +24,34 @@ import type {
 import { getDateKey } from '@/lib/domain/date';
 import { v4 as uuidv4 } from 'uuid';
 import * as demoStore from '@/lib/demo/demoStore';
+import { getOwnerDocRef, getDocRef } from './firestore';
+import { moneyDocumentFromFirestore, moneyDocumentToFirestore, type MoneyCollection } from './moneyStorage';
 
-function db() {
-  const d = getFirebaseDb();
-  if (!d) throw new Error('Firestore not initialized');
-  return d;
+async function updateOwnedRecord(
+  ownerId: string,
+  collectionName: string,
+  id: string,
+  patch: Record<string, unknown>
+) {
+  const nestedRef = getOwnerDocRef(ownerId, collectionName, id);
+  let snap = await getDoc(nestedRef);
+  let ref = nestedRef;
+  if (!snap.exists()) {
+    ref = getDocRef(collectionName, id);
+    snap = await getDoc(ref);
+  }
+  if (!snap.exists() || snap.data().ownerId !== ownerId) {
+    throw new Error('Record not found or access denied');
+  }
+  const internalData = moneyDocumentFromFirestore(
+    collectionName as MoneyCollection,
+    snap.data()
+  );
+  const updatedData = { ...internalData, ...patch, ownerId };
+  await setDoc(
+    nestedRef,
+    moneyDocumentToFirestore(collectionName as MoneyCollection, updatedData)
+  );
 }
 
 // ------ Customer mutations ------
@@ -53,7 +76,6 @@ export async function saveCustomer(
 
   const now = Timestamp.now();
   const id = existingId || uuidv4();
-  const ref = doc(db(), 'customers', id);
 
   const customer: Customer = {
     id,
@@ -72,7 +94,7 @@ export async function saveCustomer(
   };
 
   if (existingId) {
-    await updateDoc(ref, {
+    await updateOwnedRecord(ownerId, 'customers', id, {
       name: data.name,
       phoneNumber: data.phoneNumber,
       whatsappNumber: data.whatsappNumber || data.phoneNumber,
@@ -83,14 +105,16 @@ export async function saveCustomer(
       notes: data.notes,
       updatedAt: now,
     });
-  } else {
-    await setDoc(ref, customer);
-  }
+  } else await setDoc(
+    getOwnerDocRef(ownerId, 'customers', id),
+    moneyDocumentToFirestore('customers', customer)
+  );
 
   return customer;
 }
 
 export async function toggleCustomerActive(
+  ownerId: string,
   customerId: string,
   isActive: boolean
 ): Promise<void> {
@@ -99,7 +123,7 @@ export async function toggleCustomerActive(
     return;
   }
 
-  await updateDoc(doc(db(), 'customers', customerId), {
+  await updateOwnedRecord(ownerId, 'customers', customerId, {
     isActive,
     updatedAt: Timestamp.now(),
   });
@@ -124,7 +148,6 @@ export async function saveFruit(
 
   const now = Timestamp.now();
   const id = existingId || uuidv4();
-  const ref = doc(db(), 'fruits', id);
 
   const fruit: Fruit = {
     id,
@@ -139,7 +162,7 @@ export async function saveFruit(
   };
 
   if (existingId) {
-    await updateDoc(ref, {
+    await updateOwnedRecord(ownerId, 'fruits', id, {
       name: data.name,
       isActive: data.isActive,
       defaultWeightPerCrate: data.defaultWeightPerCrate,
@@ -147,21 +170,24 @@ export async function saveFruit(
       defaultDeliveryCharge: data.defaultDeliveryCharge,
       updatedAt: now,
     });
-  } else {
-    await setDoc(ref, fruit);
-  }
+  } else await setDoc(
+    getOwnerDocRef(ownerId, 'fruits', id),
+    moneyDocumentToFirestore('fruits', fruit)
+  );
 
   return fruit;
 }
 
-export async function deleteFruit(fruitId: string): Promise<void> {
+export async function deleteFruit(ownerId: string, fruitId: string): Promise<void> {
   if (IS_DEMO_MODE) {
     demoStore.deleteDemoFruit(fruitId);
     return;
   }
 
-  const { deleteDoc } = await import('firebase/firestore');
-  await deleteDoc(doc(db(), 'fruits', fruitId));
+  for (const ref of [getOwnerDocRef(ownerId, 'fruits', fruitId), getDocRef('fruits', fruitId)]) {
+    const snap = await getDoc(ref);
+    if (snap.exists() && snap.data().ownerId === ownerId) await deleteDoc(ref);
+  }
 }
 
 // ------ Sale mutations ------
@@ -189,7 +215,6 @@ export async function saveSale(
 
   const now = Timestamp.now();
   const id = existingId || uuidv4();
-  const ref = doc(db(), 'sales', id);
   const dateKey = getDateKey(data.date, timezone);
 
   const sale: SaleEntry = {
@@ -213,7 +238,7 @@ export async function saveSale(
   };
 
   if (existingId) {
-    await updateDoc(ref, {
+    await updateOwnedRecord(ownerId, 'sales', id, {
       customerId: data.customerId,
       customerName: data.customerName,
       fruitId: data.fruitId,
@@ -227,14 +252,16 @@ export async function saveSale(
       notes: data.notes,
       updatedAt: now,
     });
-  } else {
-    await setDoc(ref, sale);
-  }
+  } else await setDoc(
+    getOwnerDocRef(ownerId, 'sales', id),
+    moneyDocumentToFirestore('sales', sale)
+  );
 
   return sale;
 }
 
 export async function voidSale(
+  ownerId: string,
   saleId: string,
   reason: string
 ): Promise<void> {
@@ -243,7 +270,7 @@ export async function voidSale(
     return;
   }
 
-  await updateDoc(doc(db(), 'sales', saleId), {
+  await updateOwnedRecord(ownerId, 'sales', saleId, {
     isVoided: true,
     voidedAt: Timestamp.now(),
     notes: reason,
@@ -272,7 +299,6 @@ export async function savePayment(
 
   const now = Timestamp.now();
   const id = existingId || uuidv4();
-  const ref = doc(db(), 'payments', id);
   const dateKey = getDateKey(data.date, timezone);
 
   const payment: Payment = {
@@ -292,7 +318,7 @@ export async function savePayment(
   };
 
   if (existingId) {
-    await updateDoc(ref, {
+    await updateOwnedRecord(ownerId, 'payments', id, {
       amount: data.amount,
       paymentMode: data.paymentMode,
       date: Timestamp.fromDate(data.date),
@@ -301,13 +327,17 @@ export async function savePayment(
       updatedAt: now,
     });
   } else {
-    await setDoc(ref, payment);
+    await setDoc(
+      getOwnerDocRef(ownerId, 'payments', id),
+      moneyDocumentToFirestore('payments', payment)
+    );
   }
 
   return payment;
 }
 
 export async function voidPayment(
+  ownerId: string,
   paymentId: string,
   reason: string
 ): Promise<void> {
@@ -316,7 +346,7 @@ export async function voidPayment(
     return;
   }
 
-  await updateDoc(doc(db(), 'payments', paymentId), {
+  await updateOwnedRecord(ownerId, 'payments', paymentId, {
     isVoided: true,
     voidedAt: Timestamp.now(),
     note: reason,
@@ -347,7 +377,6 @@ export async function saveBillHistory(
 
   const now = Timestamp.now();
   const id = uuidv4();
-  const ref = doc(db(), 'billHistory', id);
 
   const history: BillHistory = {
     id,
@@ -357,6 +386,9 @@ export async function saveBillHistory(
     createdAt: now,
   };
 
-  await setDoc(ref, history);
+  await setDoc(
+    getOwnerDocRef(ownerId, 'billHistory', id),
+    moneyDocumentToFirestore('billHistory', history)
+  );
   return history;
 }
